@@ -1,0 +1,14 @@
+[0] rendering dji_mimo_20260610_193840_20260610193841_1784069484586_video.mp4 6.20-8.60s (zoom=1.5, crop_x=0.86, crop_y=0.65) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_000.mp4
+[1] rendering dji_mimo_20260610_192256_20260610192256_1784069484609_video.mp4 134.00-137.50s (zoom=1.6, crop_x=0.48, crop_y=0.42) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_001.mp4
+[2] rendering dji_mimo_20260610_223336_20260610223337_1784069484472_video.mp4 63.85-67.55s (zoom=1.6, crop_x=0.02, crop_y=0.5) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_002.mp4
+[3] rendering IMG_9173.MOV 0.00-0.85s (zoom=1.0, crop_x=0.5, crop_y=0.5) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_003.mp4
+[4] rendering dji_mimo_20260610_230412_20260610230413_1784069484424_video.mp4 10.45-13.55s (zoom=1.5, crop_x=0.8, crop_y=0.44) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_004.mp4
+[5] rendering dji_mimo_20260610_194834_20260610194833_1784069484581_video.mp4 12.25-14.15s (zoom=1.7, crop_x=0.38, crop_y=0.45) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_005.mp4
+[6] rendering dji_mimo_20260610_193552_20260610193553_1784069484591_video.mp4 127.85-128.60s (zoom=1.8, crop_x=0.9, crop_y=0.39) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_006.mp4
+[7] rendering IMG_9246.MOV 0.30-2.10s (zoom=1.0, crop_x=0.5, crop_y=0.5) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_007.mp4
+[8] rendering dji_mimo_20260610_225120_20260610225121_1784069484448_video.mp4 7.75-9.65s (zoom=1.7, crop_x=0.26, crop_y=0.21) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_008.mp4
+[9] rendering dji_mimo_20260610_192256_20260610192256_1784069484609_video.mp4 17.30-20.50s (zoom=2.0, crop_x=0.62, crop_y=0.25) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_009.mp4
+[10] rendering Video_2120448_DJI_20260610203534_0364_D_MP4_1012350953_87000_2026610203534_video_original.mov 19.75-23.45s (zoom=1.6, crop_x=0.5, crop_y=0.23) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_010.mp4
+[11] rendering IMG_9206.MOV 0.20-2.00s (zoom=1.0, crop_x=0.5, crop_y=0.5) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_011.mp4
+[12] rendering dji_mimo_20260611_002258_20260611002259_1782181992833_video.mp4 50.00-52.85s (zoom=1.7, crop_x=0.62, crop_y=0.31) -> /Users/ivachau/Downloads/video_clipper_test/output/.reel_cache_v1/seg_012.mp4
+Wrote output/highlight_reel_curious_open.mp4 (31.5s)

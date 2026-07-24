@@ -1,0 +1,408 @@
+{
+  "raw_dir": "/Users/ivachau/Downloads/video_clipper_test/raw",
+  "num_clips_scanned_this_run": 47,
+  "num_candidates_total": 65,
+  "num_candidates": 40,
+  "segments": [
+    {
+      "file": "dji_mimo_20260610_193552_20260610193553_1784069484591_video.mp4",
+      "start": 0.0,
+      "end": 2.45,
+      "duration": 2.45,
+      "audio_score": 0.9311,
+      "smile_score": 0.1,
+      "score": 0.5571,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_193552_20260610193553_1784069484591_video_0.00s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_193552_20260610193553_1784069484591_video.mp4",
+      "start": 32.95,
+      "end": 36.05,
+      "duration": 3.1,
+      "audio_score": 0.8986,
+      "smile_score": 0.1,
+      "score": 0.5392,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_193552_20260610193553_1784069484591_video_32.95s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_191820_20260610191820_1784069484620_video.mp4",
+      "start": 1.15,
+      "end": 3.05,
+      "duration": 1.9,
+      "audio_score": 0.8815,
+      "smile_score": 0.1,
+      "score": 0.5299,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_191820_20260610191820_1784069484620_video_1.15s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_224128_20260610224128_1784069484455_video.mp4",
+      "start": 19.75,
+      "end": 22.25,
+      "duration": 2.5,
+      "audio_score": 0.8773,
+      "smile_score": 0.1,
+      "score": 0.5275,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_224128_20260610224128_1784069484455_video_19.75s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_195418_20260610195418_1784069484567_video.mp4",
+      "start": 21.25,
+      "end": 23.75,
+      "duration": 2.5,
+      "audio_score": 0.8708,
+      "smile_score": 0.1,
+      "score": 0.5239,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_195418_20260610195418_1784069484567_video_21.25s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_224128_20260610224128_1784069484455_video.mp4",
+      "start": 40.15,
+      "end": 42.95,
+      "duration": 2.8,
+      "audio_score": 0.863,
+      "smile_score": 0.1,
+      "score": 0.5196,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_224128_20260610224128_1784069484455_video_40.15s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260611_000504_20260611000504_1782181992865_video.mp4",
+      "start": 9.25,
+      "end": 11.45,
+      "duration": 2.2,
+      "audio_score": 0.8624,
+      "smile_score": 0.1,
+      "score": 0.5193,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260611_000504_20260611000504_1782181992865_video_9.25s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_192256_20260610192256_1784069484609_video.mp4",
+      "start": 136.75,
+      "end": 138.65,
+      "duration": 1.9,
+      "audio_score": 0.8612,
+      "smile_score": 0.1,
+      "score": 0.5187,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_192256_20260610192256_1784069484609_video_136.75s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_192256_20260610192256_1784069484609_video.mp4",
+      "start": 16.15,
+      "end": 20.75,
+      "duration": 4.6,
+      "audio_score": 0.9424,
+      "smile_score": 0.0,
+      "score": 0.5183,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_192256_20260610192256_1784069484609_video_16.15s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_225120_20260610225121_1784069484448_video.mp4",
+      "start": 7.75,
+      "end": 9.65,
+      "duration": 1.9,
+      "audio_score": 0.8492,
+      "smile_score": 0.1,
+      "score": 0.512,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_225120_20260610225121_1784069484448_video_7.75s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_192054_20260610192054_1784069484614_video.mp4",
+      "start": 8.95,
+      "end": 11.15,
+      "duration": 2.2,
+      "audio_score": 0.9268,
+      "smile_score": 0.0,
+      "score": 0.5098,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_192054_20260610192054_1784069484614_video_8.95s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_225338_20260610225338_1784069484443_video.mp4",
+      "start": 11.35,
+      "end": 13.85,
+      "duration": 2.5,
+      "audio_score": 0.839,
+      "smile_score": 0.1,
+      "score": 0.5064,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_225338_20260610225338_1784069484443_video_11.35s.jpg"
+    },
+    {
+      "file": "Video_2120448_DJI_20260610203534_0364_D_MP4_1012350953_87000_2026610203534_video_original.mov",
+      "start": 20.95,
+      "end": 23.45,
+      "duration": 2.5,
+      "audio_score": 0.8386,
+      "smile_score": 0.1,
+      "score": 0.5062,
+      "thumbnail": "thumbnails/seg_Video_2120448_DJI_20260610203534_0364_D_MP4_1012350953_87000_2026610203534_video_original_20.95s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_193552_20260610193553_1784069484591_video.mp4",
+      "start": 35.65,
+      "end": 38.45,
+      "duration": 2.8,
+      "audio_score": 0.835,
+      "smile_score": 0.1,
+      "score": 0.5042,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_193552_20260610193553_1784069484591_video_35.65s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_230412_20260610230413_1784069484424_video.mp4",
+      "start": 10.45,
+      "end": 13.55,
+      "duration": 3.1,
+      "audio_score": 0.8319,
+      "smile_score": 0.1,
+      "score": 0.5025,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_230412_20260610230413_1784069484424_video_10.45s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_223336_20260610223337_1784069484472_video.mp4",
+      "start": 63.85,
+      "end": 67.55,
+      "duration": 3.7,
+      "audio_score": 0.8312,
+      "smile_score": 0.1,
+      "score": 0.5021,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_223336_20260610223337_1784069484472_video_63.85s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_223336_20260610223337_1784069484472_video.mp4",
+      "start": 14.05,
+      "end": 16.55,
+      "duration": 2.5,
+      "audio_score": 0.9095,
+      "smile_score": 0.0,
+      "score": 0.5002,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_223336_20260610223337_1784069484472_video_14.05s.jpg"
+    },
+    {
+      "file": "Video_2120448_DJI_20260610203534_0364_D_MP4_1012350953_87000_2026610203534_video_original.mov",
+      "start": 67.75,
+      "end": 69.95,
+      "duration": 2.2,
+      "audio_score": 0.9042,
+      "smile_score": 0.0,
+      "score": 0.4973,
+      "thumbnail": "thumbnails/seg_Video_2120448_DJI_20260610203534_0364_D_MP4_1012350953_87000_2026610203534_video_original_67.75s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260611_000336_20260611000335_1782181992827_video.mp4",
+      "start": 45.55,
+      "end": 48.65,
+      "duration": 3.1,
+      "audio_score": 0.8193,
+      "smile_score": 0.1,
+      "score": 0.4956,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260611_000336_20260611000335_1782181992827_video_45.55s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_192256_20260610192256_1784069484609_video.mp4",
+      "start": 74.05,
+      "end": 76.25,
+      "duration": 2.2,
+      "audio_score": 0.8971,
+      "smile_score": 0.0,
+      "score": 0.4934,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_192256_20260610192256_1784069484609_video_74.05s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_221426_20260610221427_1784069484477_video.mp4",
+      "start": 14.05,
+      "end": 16.25,
+      "duration": 2.2,
+      "audio_score": 0.895,
+      "smile_score": 0.0,
+      "score": 0.4922,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_221426_20260610221427_1784069484477_video_14.05s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_224022_20260610224023_1784069484458_video.mp4",
+      "start": 2.95,
+      "end": 4.85,
+      "duration": 1.9,
+      "audio_score": 0.8115,
+      "smile_score": 0.1,
+      "score": 0.4913,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_224022_20260610224023_1784069484458_video_2.95s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260611_000336_20260611000335_1782181992827_video.mp4",
+      "start": 50.95,
+      "end": 53.15,
+      "duration": 2.2,
+      "audio_score": 0.8052,
+      "smile_score": 0.1,
+      "score": 0.4879,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260611_000336_20260611000335_1782181992827_video_50.95s.jpg"
+    },
+    {
+      "file": "Video_2120448_DJI_20260610203534_0364_D_MP4_1012350953_87000_2026610203534_video_original.mov",
+      "start": 6.25,
+      "end": 8.15,
+      "duration": 1.9,
+      "audio_score": 0.8858,
+      "smile_score": 0.0,
+      "score": 0.4872,
+      "thumbnail": "thumbnails/seg_Video_2120448_DJI_20260610203534_0364_D_MP4_1012350953_87000_2026610203534_video_original_6.25s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_223626_20260610223627_1784069484462_video.mp4",
+      "start": 21.25,
+      "end": 24.05,
+      "duration": 2.8,
+      "audio_score": 0.8828,
+      "smile_score": 0.0,
+      "score": 0.4856,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_223626_20260610223627_1784069484462_video_21.25s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_193552_20260610193553_1784069484591_video.mp4",
+      "start": 71.05,
+      "end": 73.85,
+      "duration": 2.8,
+      "audio_score": 0.8008,
+      "smile_score": 0.1,
+      "score": 0.4854,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_193552_20260610193553_1784069484591_video_71.05s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_231538_20260610231537_1784069484413_video.mp4",
+      "start": 15.55,
+      "end": 18.05,
+      "duration": 2.5,
+      "audio_score": 0.8795,
+      "smile_score": 0.0,
+      "score": 0.4837,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_231538_20260610231537_1784069484413_video_15.55s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_191820_20260610191820_1784069484620_video.mp4",
+      "start": 0.0,
+      "end": 1.55,
+      "duration": 1.55,
+      "audio_score": 0.8777,
+      "smile_score": 0.0,
+      "score": 0.4827,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_191820_20260610191820_1784069484620_video_0.00s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_221426_20260610221427_1784069484477_video.mp4",
+      "start": 60.55,
+      "end": 62.75,
+      "duration": 2.2,
+      "audio_score": 0.8766,
+      "smile_score": 0.0,
+      "score": 0.4822,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_221426_20260610221427_1784069484477_video_60.55s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_230042_20260610230042_1784069484427_video.mp4",
+      "start": 5.65,
+      "end": 7.55,
+      "duration": 1.9,
+      "audio_score": 0.7944,
+      "smile_score": 0.1,
+      "score": 0.4819,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_230042_20260610230042_1784069484427_video_5.65s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_194834_20260610194833_1784069484581_video.mp4",
+      "start": 12.25,
+      "end": 14.15,
+      "duration": 1.9,
+      "audio_score": 0.8754,
+      "smile_score": 0.0,
+      "score": 0.4815,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_194834_20260610194833_1784069484581_video_12.25s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_193840_20260610193841_1784069484586_video.mp4",
+      "start": 52.15,
+      "end": 54.05,
+      "duration": 1.9,
+      "audio_score": 0.8744,
+      "smile_score": 0.0,
+      "score": 0.4809,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_193840_20260610193841_1784069484586_video_52.15s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260611_002258_20260611002259_1782181992833_video.mp4",
+      "start": 50.05,
+      "end": 52.85,
+      "duration": 2.8,
+      "audio_score": 0.791,
+      "smile_score": 0.1,
+      "score": 0.4801,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260611_002258_20260611002259_1782181992833_video_50.05s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_223336_20260610223337_1784069484472_video.mp4",
+      "start": 68.65,
+      "end": 70.55,
+      "duration": 1.9,
+      "audio_score": 0.8705,
+      "smile_score": 0.0,
+      "score": 0.4788,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_223336_20260610223337_1784069484472_video_68.65s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_221426_20260610221427_1784069484477_video.mp4",
+      "start": 17.65,
+      "end": 21.95,
+      "duration": 4.3,
+      "audio_score": 0.8686,
+      "smile_score": 0.0,
+      "score": 0.4777,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_221426_20260610221427_1784069484477_video_17.65s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_191656_20260610191657_1784069484625_video.mp4",
+      "start": 3.55,
+      "end": 6.05,
+      "duration": 2.5,
+      "audio_score": 0.8637,
+      "smile_score": 0.0,
+      "score": 0.475,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_191656_20260610191657_1784069484625_video_3.55s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_223336_20260610223337_1784069484472_video.mp4",
+      "start": 50.35,
+      "end": 52.85,
+      "duration": 2.5,
+      "audio_score": 0.8619,
+      "smile_score": 0.0,
+      "score": 0.4741,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_223336_20260610223337_1784069484472_video_50.35s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_215652_20260610215652_1784069484503_video.mp4",
+      "start": 1.75,
+      "end": 4.25,
+      "duration": 2.5,
+      "audio_score": 0.8609,
+      "smile_score": 0.0,
+      "score": 0.4735,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_215652_20260610215652_1784069484503_video_1.75s.jpg"
+    },
+    {
+      "file": "Video_2120448_DJI_20260610203534_0364_D_MP4_1012350953_87000_2026610203534_video_original.mov",
+      "start": 0.55,
+      "end": 2.45,
+      "duration": 1.9,
+      "audio_score": 0.8597,
+      "smile_score": 0.0,
+      "score": 0.4728,
+      "thumbnail": "thumbnails/seg_Video_2120448_DJI_20260610203534_0364_D_MP4_1012350953_87000_2026610203534_video_original_0.55s.jpg"
+    },
+    {
+      "file": "dji_mimo_20260610_220824_20260610220823_1784069484481_video.mp4",
+      "start": 17.65,
+      "end": 19.85,
+      "duration": 2.2,
+      "audio_score": 0.776,
+      "smile_score": 0.1,
+      "score": 0.4718,
+      "thumbnail": "thumbnails/seg_dji_mimo_20260610_220824_20260610220823_1784069484481_video_17.65s.jpg"
+    }
+  ]
+}
