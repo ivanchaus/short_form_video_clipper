@@ -51,6 +51,11 @@ environment).
 
 ## Step 2 — Run the detector
 
+Prefer running this via `scan_pipeline.py` (see "One-command pipeline"
+below) — it wraps this exact step plus an optional dense sweep in a single
+background-able process, instead of many separate tool calls. The manual
+form is still valid if you only want the audio+smile pass:
+
 ```bash
 python3 scripts/analyze_clips.py <raw_dir> --out-dir <workdir>/analysis
 ```
@@ -66,7 +71,13 @@ high-scoring moments into candidate segments, and writes:
   candidate, for visual QC
 
 If a clip has no audible reaction and no visible face reacting, it simply
-won't produce candidates — that's expected, not a bug.
+won't produce candidates — that's expected, not a bug. **Audio+smile
+detection only catches reactions with a matching sound or a locked-in
+smile.** Quiet gestures — a guest pointing at their portrait, tracing a
+detail, showing it to someone — produce no audio spike and often no clean
+smile frame, so they will never appear in `analysis.json` no matter how the
+thresholds are tuned. If the user asks for these, that's what the dense
+sweep (below) is for, not a lower `--percentile`.
 
 Since this skill exports every worthwhile candidate rather than curating
 down to a fixed ~30-45s runtime, lean toward a looser `--percentile` and a
@@ -80,11 +91,116 @@ than trying to hand-fix `analysis.json`):
 - `--min-segment` (default 1.2s) — minimum candidate length
 - `--top-n` (default 25) — how many candidates to keep; raise this well above the reel default since nothing here gets cut for runtime
 
+## One-command pipeline (recommended — saves a lot of back-and-forth)
+
+Running the detector, then separately extracting dense frames, then
+tiling them into grids, one ffmpeg call at a time, burns a large number of
+tool-call turns for what is ultimately mechanical work with no judgment
+involved. `scan_pipeline.py` does all of it — audio+smile detection *and*
+a dense fixed-interval frame sweep across every file, tiled into grid
+montages sized for one Read call each — in a single invocation:
+
+```bash
+python3 scripts/scan_pipeline.py <raw_dir> <workdir> \
+  --percentile 45 --top-n 150 --dense-interval 3
+```
+
+This is slow in wall-clock time (it's decoding/seeking every file twice),
+so run it with `run_in_background` or `nohup ... &` and check back rather
+than waiting on it synchronously. Output layout:
+
+- `<workdir>/analysis/analysis.json` + `thumbnails/*.jpg` — same as Step 2
+- `<workdir>/dense/manifest.json` — `[{idx, file, t}, ...]` for every dense-sweep frame
+- `<workdir>/dense/frames/fNNNN.jpg` — the raw extracted frames
+- `<workdir>/dense/grids/gridNNN.jpg` — those frames tiled `cols x rows`
+  (default 8x6) per image, in order, so reviewing the whole sweep is one
+  Read call per grid instead of one per frame
+
+To trace an interesting grid cell back to its source: flat index =
+`grid_number * cols*rows + row*cols + col` (0-indexed row/col within the
+grid), then look that index up in `dense/manifest.json` for the exact file
+and timestamp, and `ffmpeg -ss <t> -i <file> -frames:v 1 ...` a closer look
+before trusting it — a low-res tiled thumbnail reads pointing-shaped motion
+blur as a pointing gesture more often than it should (in practice this
+happens most with the illustrator's own drawing arm at the portrait table
+— always confirm the "pointer" is a guest, not the artist, before adding a
+candidate).
+
+Useful flags beyond the ones shared with `analyze_clips.py`:
+- `--dense-interval` (default 3.0s) — smaller catches shorter gestures but
+  multiplies the frame count; 1.5-3s has been the useful range in practice,
+  exhaustive sub-second intervals have not paid for themselves
+- `--skip-files` / `--skip-substrings` — exclude files already covered by
+  an earlier deep-scan (comma-separated), or filter out known duplicate
+  copies (defaults to filtering `video 2.mp4`-style dupes)
+- `--grid-cols` / `--grid-rows` — tile size; smaller grids are easier to
+  inspect closely but mean more Read calls overall
+- `--skip-audio-detection` / `--skip-dense-sweep` — run just one half of
+  the pipeline (e.g. rerunning only the dense sweep with a tighter interval
+  after the audio pass already looked complete)
+
+This still doesn't replace Step 3 — someone (or Claude) still has to look
+at the thumbnails and grids and judge what's genuine. It just collapses
+the mechanical extraction work into one process instead of dozens of
+separate tool calls.
+
+## Motion scan (catches what the dense sweep structurally misses)
+
+The dense sweep above has two blind spots that no amount of careful review
+fixes: a gesture shorter than `--dense-interval` can fall entirely between
+samples (a ~0.5s thumbs up, a quick point), and a real but subtle reaction
+(quietly holding a portrait up, raising a phone to photograph it) reads as
+indistinguishable from generic crowd milling once it's one of 40+ tiny
+280px cells in a grid. Both of these caused real misses in practice —
+confirmed by user-supplied timestamps that the dense sweep + review had
+walked right past.
+
+`scan_pipeline.py`'s motion stage (on by default, `--skip-motion-scan` to
+disable) targets exactly that gap:
+
+1. Decodes each file once, continuously, at `--motion-fps` (default 3.0,
+   ~0.33s resolution, gapless) — with `--motion-hwaccel videotoolbox`
+   (default, macOS) this is ~7x faster than software decode on 4K source,
+   which is what makes dense continuous sampling affordable at all.
+2. Scores frame-to-frame motion per sample as the single hottest block in
+   an N×N grid (`--motion-blocks`, default 16), not a whole-frame average —
+   a hand gesture only changes a small patch of a crowded wide shot, and
+   averaging over the whole frame buries it under ambient crowd motion.
+3. Ranks candidates by how far they stand out from *that file's own*
+   baseline (robust z-score), not pooled globally — otherwise a file with
+   a lot of camera panning dominates and a quiet file's one real spike
+   never surfaces. `--motion-max-per-file` (default 3) caps how many
+   slots any single file can take for the same reason.
+4. Renders only the top `--motion-top-n` (default 150) candidates
+   individually at `--motion-out-size` (default 560px, much larger than
+   dense thumbs), tiled few-per-grid (`--motion-grid-cols/rows`, default
+   3x3) so each one stays legible.
+
+Raw per-frame scores are cached to `<workdir>/motion/all_scores.json`; add
+`--motion-reuse-scores` to re-tune `--motion-top-n` / `--motion-min-gap` /
+`--motion-max-per-file` without re-paying the decode cost (the expensive
+part) on a rerun.
+
+**Known limits, disclosed rather than papered over:** this is a motion
+detector, not a reaction detector — a lot of what surfaces is still posed
+photos and generic milling that need the same Step 3 judgment as anything
+else, and files with near-continuous handheld camera shake throughout can
+have their one real gesture buried under an already-high, uniform motion
+baseline (a genuinely brief gesture in an otherwise-shaky clip may not
+outscore the file's own noise floor even with all of the above). Treat a
+"nothing here" result on a shaky file as inconclusive, not as confirmation
+there's no reaction in it — that's still a case where a direct human tip
+beats the algorithm.
+
 ## Step 3 — Review candidates visually
 
 Read `analysis.json`, then use the Read tool on the thumbnails — for this
 skill, look at *all* of them, not just the top 15-20, since the goal is to
-export every good moment rather than curate a short list. For each, judge:
+export every good moment rather than curate a short list. If a dense sweep
+was also run (via `scan_pipeline.py`), review every grid in `dense/grids/`
+the same way, keeping a running list of any (grid, row, col) worth a closer
+look, then batch the flat-index lookups + zoom-in verification afterward
+rather than context-switching per candidate. For each, judge:
 
 - Does this look like a genuine reaction — open smile, laughing, hand-to-mouth
   surprise, animated gesture, or (for the curious bucket) real staring/
