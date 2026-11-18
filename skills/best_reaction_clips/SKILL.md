@@ -51,10 +51,10 @@ environment).
 
 ## Step 2 — Run the detector
 
-Prefer running this via `scan_pipeline.py` (see "One-command pipeline"
-below) — it wraps this exact step plus an optional dense sweep in a single
-background-able process, instead of many separate tool calls. The manual
-form is still valid if you only want the audio+smile pass:
+Run this via `scan_pipeline.py` (see "One-command pipeline" below) whenever
+the request asks to search *all* footage. The manual form is only a partial
+audio-led diagnostic pass; it cannot discover a quiet facial reaction
+outside an audio-selected window:
 
 ```bash
 python3 scripts/analyze_clips.py <raw_dir> --out-dir <workdir>/analysis
@@ -62,22 +62,21 @@ python3 scripts/analyze_clips.py <raw_dir> --out-dir <workdir>/analysis
 
 This scans every clip in `<raw_dir>`, extracts audio RMS energy, samples
 frames for face + smile detection (OpenCV Haar cascades — no model download
-needed), combines the two signals into a per-moment score, merges nearby
+needed), treats the two signals as independent evidence, merges nearby
 high-scoring moments into candidate segments, and writes:
 
 - `<workdir>/analysis/analysis.json` — ranked candidate segments (file,
   start, end, score)
-- `<workdir>/analysis/thumbnails/*.jpg` — one representative frame per
-  candidate, for visual QC
+- `<workdir>/analysis/thumbnails/*.jpg` — a time-labeled nine-frame contact
+  sheet spanning the candidate plus 4s pre-roll and 4s post-roll
 
-If a clip has no audible reaction and no visible face reacting, it simply
-won't produce candidates — that's expected, not a bug. **Audio+smile
-detection only catches reactions with a matching sound or a locked-in
-smile.** Quiet gestures — a guest pointing at their portrait, tracing a
-detail, showing it to someone — produce no audio spike and often no clean
-smile frame, so they will never appear in `analysis.json` no matter how the
-thresholds are tuned. If the user asks for these, that's what the dense
-sweep (below) is for, not a lower `--percentile`.
+`analysis.json` is not a coverage guarantee. Haar cascades commonly return
+0 for small/profile faces and open-mouth laughter or screams, and quiet
+expressions may never enter an audio-selected window. A failed face score
+must not suppress a strong audio event, and a missing audio event must not
+suppress visual review. The full-timeline dense and motion sweeps are
+therefore required for comprehensive work; lowering `--percentile` cannot
+recover a moment that was never eligible.
 
 Since this skill exports every worthwhile candidate rather than curating
 down to a fixed ~30-45s runtime, lean toward a looser `--percentile` and a
@@ -86,10 +85,13 @@ comprehensive coverage of good moments, not a tight cut.
 
 Useful knobs if the first pass looks off (rerun with adjusted flags rather
 than trying to hand-fix `analysis.json`):
-- `--percentile` (default 75) — raise it to be pickier, lower it to surface more candidates
+- `--percentile` (manual-detector default 85) — raise it to be pickier, lower it to surface more candidates
 - `--audio-weight` / `--smile-weight` (default 0.55 / 0.45) — shift emphasis if one signal is clearly more reliable for this footage (e.g. windy outdoor audio → lean more on smile detection)
 - `--min-segment` (default 1.2s) — minimum candidate length
 - `--top-n` (default 25) — how many candidates to keep; raise this well above the reel default since nothing here gets cut for runtime
+- `--review-preroll` / `--review-postroll` (defaults 4s / 4s) — context
+  shown around each detected window; increase when reactions visibly build
+  before the sound or continue after it
 
 ## One-command pipeline (recommended — saves a lot of back-and-forth)
 
@@ -102,18 +104,20 @@ montages sized for one Read call each — in a single invocation:
 
 ```bash
 python3 scripts/scan_pipeline.py <raw_dir> <workdir> \
-  --percentile 45 --top-n 150 --dense-interval 3
+  --percentile 30 --top-n 300 --max-per-file 30 \
+  --review-postroll 4
 ```
 
 This is slow in wall-clock time (it's decoding/seeking every file twice),
 so run it with `run_in_background` or `nohup ... &` and check back rather
 than waiting on it synchronously. Output layout:
 
-- `<workdir>/analysis/analysis.json` + `thumbnails/*.jpg` — same as Step 2
+- `<workdir>/analysis/analysis.json` + `thumbnails/*.jpg` — same as Step 2;
+  every thumbnail is a multi-frame candidate contact sheet
 - `<workdir>/dense/manifest.json` — `[{idx, file, t}, ...]` for every dense-sweep frame
 - `<workdir>/dense/frames/fNNNN.jpg` — the raw extracted frames
 - `<workdir>/dense/grids/gridNNN.jpg` — those frames tiled `cols x rows`
-  (default 8x6) per image, in order, so reviewing the whole sweep is one
+  (default 4x3) per image, in order, so reviewing the whole sweep is one
   Read call per grid instead of one per frame
 
 To trace an interesting grid cell back to its source: flat index =
@@ -127,9 +131,9 @@ happens most with the illustrator's own drawing arm at the portrait table
 candidate).
 
 Useful flags beyond the ones shared with `analyze_clips.py`:
-- `--dense-interval` (default 3.0s) — smaller catches shorter gestures but
-  multiplies the frame count; 1.5-3s has been the useful range in practice,
-  exhaustive sub-second intervals have not paid for themselves
+- `--dense-interval` (default 1.0s) — this is intentionally denser than the
+  old 3s default: a 2s facial reaction can fall entirely between 3s samples.
+  Use sub-second sampling only for a targeted clip/window after this pass.
 - `--skip-files` / `--skip-substrings` — exclude files already covered by
   an earlier deep-scan (comma-separated), or filter out known duplicate
   copies (defaults to filtering `video 2.mp4`-style dupes)
@@ -138,6 +142,13 @@ Useful flags beyond the ones shared with `analyze_clips.py`:
 - `--skip-audio-detection` / `--skip-dense-sweep` — run just one half of
   the pipeline (e.g. rerunning only the dense sweep with a tighter interval
   after the audio pass already looked complete)
+
+The looser audio settings in the command are deliberate for standalone
+exports. Normal-volume praise can rank just below a global top-150 cutoff,
+especially in a long, busy file. Do not tighten them merely because the
+candidate set is large: comprehensive reaction export values recall over a
+short review queue. The dense and motion sweeps still need to be reviewed,
+but neither can reveal what a subtly smiling guest actually said.
 
 This still doesn't replace Step 3 — someone (or Claude) still has to look
 at the thumbnails and grids and judge what's genuine. It just collapses
@@ -149,9 +160,9 @@ separate tool calls.
 The dense sweep above has two blind spots that no amount of careful review
 fixes: a gesture shorter than `--dense-interval` can fall entirely between
 samples (a ~0.5s thumbs up, a quick point), and a real but subtle reaction
-(quietly holding a portrait up, raising a phone to photograph it) reads as
-indistinguishable from generic crowd milling once it's one of 40+ tiny
-280px cells in a grid. Both of these caused real misses in practice —
+(quietly holding a portrait up, raising a phone to photograph it) can read
+as indistinguishable from generic crowd milling even in the larger 4x3
+review grids. Both of these caused real misses in practice —
 confirmed by user-supplied timestamps that the dense sweep + review had
 walked right past.
 
@@ -169,9 +180,9 @@ disable) targets exactly that gap:
 3. Ranks candidates by how far they stand out from *that file's own*
    baseline (robust z-score), not pooled globally — otherwise a file with
    a lot of camera panning dominates and a quiet file's one real spike
-   never surfaces. `--motion-max-per-file` (default 3) caps how many
+   never surfaces. `--motion-max-per-file` (default 8) caps how many
    slots any single file can take for the same reason.
-4. Renders only the top `--motion-top-n` (default 150) candidates
+4. Renders only the top `--motion-top-n` (default 300) candidates
    individually at `--motion-out-size` (default 560px, much larger than
    dense thumbs), tiled few-per-grid (`--motion-grid-cols/rows`, default
    3x3) so each one stays legible.
@@ -192,15 +203,91 @@ outscore the file's own noise floor even with all of the above). Treat a
 there's no reaction in it — that's still a case where a direct human tip
 beats the algorithm.
 
-## Step 3 — Review candidates visually
+## Screaming/squealing reactions must survive a failed smile cascade
 
-Read `analysis.json`, then use the Read tool on the thumbnails — for this
-skill, look at *all* of them, not just the top 15-20, since the goal is to
-export every good moment rather than curate a short list. If a dense sweep
-was also run (via `scan_pipeline.py`), review every grid in `dense/grids/`
-the same way, keeping a running list of any (grid, row, col) worth a closer
-look, then batch the flat-index lookups + zoom-in verification afterward
-rather than context-switching per candidate. For each, judge:
+An open-mouth scream or gasp often scores 0.0-0.1 in the Haar smile
+cascade. `analyze_clips.py` therefore ranks each audio-selected candidate
+by the better of its audio-only score and its audio+smile score; face
+detection is positive evidence, never a penalty. Review the whole contact
+sheet even when `smile_score` is 0.
+
+Do not use a fixed loudness threshold such as 2.2σ as a coverage gate.
+Real screams on a consistently loud clip can peak much lower relative to
+that clip's baseline. Audio scores surface candidates; the full-timeline
+visual sweep provides coverage.
+
+## Spoken delight needs a full-timeline language pass
+
+RMS loudness and facial cascades both miss a common keeper: a guest speaking
+enthusiastically at normal conversational volume while looking down, in
+profile, or smiling too subtly for Haar detection. Expressions such as
+"that's us," "nice," "incredible," "I love it," "this is amazing," "this is
+so cute," and "can we take it?" are strong reactions even without a scream,
+large motion spike, or detected smile.
+
+For a comprehensive run, transcribe the full audio timeline of every source
+file as a discovery pass, not only audio-ranked finalists. Search the
+timestamped result for positive/surprised reaction language (the examples
+above are illustrative, not an exhaustive whitelist), then inspect the
+aligned face and several seconds of surrounding context. Treat a transcript
+hit as an independent candidate source: it must survive even when its RMS
+rank misses `analysis.json` or its face score is 0.0-0.1.
+
+ASR is noisy in crowded venues. Use one fast full-timeline pass to find
+possible hits, then validate each hit by listening or by retranscribing that
+short window from both raw audio and a cleaned copy (`highpass=f=120,
+afftdn=nf=-25,dynaudnorm`). Agreement is useful evidence, but the visible
+speaker/reaction and intelligible source audio are decisive. Never discard a
+user-supplied phrase merely because ASR paraphrases it.
+
+## Don't truncate a long reaction to the detector's merged window
+
+`merge_windows` stops a segment the moment the score drops below
+threshold, which can slice a single continuous reaction into a much
+shorter clip than the reaction actually was — a guest who screams, then
+keeps talking with her hand on her chest, then laughs again a few seconds
+later is one continuous moment, not a 2-second one. Before locking in a
+candidate's `start`/`end`, check what's actually happening just before and
+after the merged window at 0.25-0.5s spacing and extend the clip to cover
+the full arc.
+
+If the reaction has multiple genuinely distinct beats — e.g. it dips back
+to calm conversation for 15-20s and then spikes again — treat those as
+**separate clips** from the same source file rather than one clip spanning
+the dead air between them, even when it's the same guest both times. Two
+clean, distinct clips read better than one clip with a long lull in the
+middle. A useful rule of thumb: if the audio stays elevated (or the visual
+energy stays clearly up) the whole way through a gap, it's one continuous
+reaction and should be one (potentially long, 8-12s+) clip; if it drops
+back to baseline in between, it's two.
+
+## A candidate contact sheet can still hide a very short reaction
+
+`analyze_clips.py` writes nine-frame contact sheets spanning 4s before and
+4s after each detected window. This is essential because the face can react
+before the loudest word, laugh, or clap that triggered detection. Use the
+sheet's `review_start`/`review_end`, not only the candidate's `start`/`end`,
+when judging and finding the true clip boundary. A sub-second expression
+can still fall between samples; if a sheet has a strong audio score but no
+visible explanation, inspect its context at 0.25-0.5s spacing instead of
+discarding it. Open-mouth screams are especially likely to have a
+`smile_score` of 0.
+
+Before finishing Step 3, pull every candidate with `duration >= 5.0` and
+`smile_score <= 0.1` and inspect between the contact-sheet samples at
+0.25-0.5s spacing. Treat low smile as "cascade inconclusive," not as
+evidence of low emotion.
+
+## Step 3 — Review candidates visually and audibly
+
+Read `analysis.json`, then inspect every multi-frame candidate sheet — not
+just the top 15-20. Review every grid in both `motion/grids/` and
+`dense/grids/`, keeping a running list of any (grid, row, col) worth a
+closer look, then batch the flat-index lookups + zoom-in verification.
+Maintain a per-source-file coverage ledger and do not finalize until every
+source file appears in the dense manifest and every grid has been reviewed.
+Detector ranking is triage, never permission to ignore unranked footage.
+For each moment, judge:
 
 - Does this look like a genuine reaction — open smile, laughing, hand-to-mouth
   surprise, animated gesture, or (for the curious bucket) real staring/
@@ -213,6 +300,21 @@ rather than context-switching per candidate. For each, judge:
   a posed photo moment, not a reaction — discard it even if the audio/smile
   score is high. Candid reactions have guests looking at the tablet/portrait
   or each other, with more spontaneous, in-motion body language.
+
+Review the audio content too; frames and RMS scores cannot reveal meaningful
+words. Audition each audio-led candidate from `review_start` to `review_end`
+before discarding it. Short, clear exclamations such as "oh my God," "wow,"
+or "no way" are excited reactions even when the smile cascade returns 0.
+If direct listening is unavailable, extract raw and cleaned audio and use
+agreement between two transcription attempts as a discovery aid; never
+trust one Whisper pass. Extend the final segment to include the complete
+phrase and its corresponding facial reaction.
+
+Maintain a separate speech-hit ledger alongside the visual coverage ledger.
+Before finalizing, every phrase hit must be marked kept or rejected with a
+reason. This prevents a visually subtle but verbally excellent reaction from
+being silently lost during final curation after the detector successfully
+surfaced its neighborhood.
 
 Discard candidates that don't hold up. Unlike a compiled reel, there's no
 minimum total runtime to hit here — it's fine to end up with anywhere from a

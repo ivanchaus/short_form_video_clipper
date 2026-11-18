@@ -6,7 +6,7 @@ analyze_clips.py — Scan raw video clips and score short time windows for
   1. Audio energy: RMS loudness, z-scored within each clip, to catch
      laughs, gasps, cheering, exclamations. This is extracted for the
      WHOLE clip cheaply (audio-only demux, no video decode).
-  2. Face/smile confirmation: for each audio-energy candidate window only,
+  2. Face/smile evidence: for each audio-energy candidate window only,
      a handful of frames are grabbed with ffmpeg fast-seek (-ss before -i,
      which jumps to the nearest keyframe rather than decoding from the
      start) and checked with OpenCV Haar cascades for a smiling face.
@@ -14,14 +14,17 @@ analyze_clips.py — Scan raw video clips and score short time windows for
 This two-stage design matters for real footage: continuously decoding
 every frame of long/high-resolution source video (e.g. 4K 50fps action-cam
 footage) to run face detection is drastically slower than realtime on
-modest hardware. Audio is cheap to scan in full, reactions are almost
-always audible, and fast-seek frame grabs only cost something for the
-candidate windows that already look promising — so this stays fast
-regardless of source resolution or clip length.
+modest hardware. Audio is cheap to scan in full, many strong reactions are
+audible, and fast-seek frame grabs only cost something for candidate
+windows that already look promising. Comprehensive searches must pair this
+fast pass with scan_pipeline.py's full-timeline visual sweep.
 
-This script does NOT decide the final cut. It just surfaces candidates
-with a thumbnail each, so a human (or Claude, reading the thumbnails) can
-sanity-check before committing to a final edit.
+This script does NOT decide the final cut. It surfaces candidates with a
+multi-frame review sheet that includes pre/post context, so a human (or
+Claude) sees facial beats that lead or lag the detected audio window. Face/
+smile detection is supporting evidence, not a gate: open-mouth screams and
+profile/wide-shot faces frequently score zero even when the reaction is
+excellent.
 
 Usage:
     python3 analyze_clips.py <raw_dir> [options]
@@ -150,6 +153,39 @@ def smile_score_for_frame(frame):
     return min(1.0, 0.6 + 0.4 * (sw / fw))
 
 
+def make_review_sheet(frames, times, cols=3, cell_w=360, cell_h=640):
+    """Tile frames from across a candidate into one legible review image.
+
+    A single midpoint/start thumbnail routinely hides the useful beat in a
+    multi-second candidate. Fixed-size letterboxed cells also keep portrait
+    and landscape sources comparable without distorting faces.
+    """
+    cells = []
+    for frame, t in zip(frames, times):
+        if frame is None:
+            cell = np.zeros((cell_h, cell_w, 3), dtype=np.uint8)
+        else:
+            h, w = frame.shape[:2]
+            scale = min(cell_w / max(1, w), cell_h / max(1, h))
+            rw, rh = max(1, int(w * scale)), max(1, int(h * scale))
+            resized = cv2.resize(frame, (rw, rh), interpolation=cv2.INTER_AREA)
+            cell = np.zeros((cell_h, cell_w, 3), dtype=np.uint8)
+            x, y = (cell_w - rw) // 2, (cell_h - rh) // 2
+            cell[y:y + rh, x:x + rw] = resized
+        label = f"t={float(t):.1f}s"
+        cv2.putText(cell, label, (12, 34), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8, (0, 0, 0), 5, cv2.LINE_AA)
+        cv2.putText(cell, label, (12, 34), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8, (255, 255, 255), 2, cv2.LINE_AA)
+        cells.append(cell)
+    if not cells:
+        return None
+    while len(cells) % cols:
+        cells.append(np.zeros((cell_h, cell_w, 3), dtype=np.uint8))
+    rows = [np.hstack(cells[i:i + cols]) for i in range(0, len(cells), cols)]
+    return np.vstack(rows)
+
+
 def merge_windows(grid, scores, hop, threshold, min_len, pad, clip_duration):
     """Merge contiguous grid points above threshold into segments."""
     segments = []
@@ -192,8 +228,16 @@ def main():
                      help="audio score percentile (per-clip) used as the candidate threshold")
     ap.add_argument("--min-segment", type=float, default=1.2, help="min segment length, seconds")
     ap.add_argument("--pad", type=float, default=0.35, help="context padding around each segment")
-    ap.add_argument("--frames-per-candidate", type=int, default=3,
+    ap.add_argument("--frames-per-candidate", type=int, default=6,
                      help="how many fast-seek frames to sample per audio candidate for smile check")
+    ap.add_argument("--face-sample-size", type=int, default=960,
+                    help="max frame dimension for face/smile checks; wide shots need more than 640")
+    ap.add_argument("--review-frames", type=int, default=9,
+                    help="frames spread across each candidate plus context in its review sheet")
+    ap.add_argument("--review-preroll", type=float, default=4.0,
+                    help="seconds before each detected window included in its review sheet")
+    ap.add_argument("--review-postroll", type=float, default=2.0,
+                    help="seconds after each detected window included in its review sheet")
     ap.add_argument("--max-per-file", type=int, default=8,
                      help="cap on audio candidate windows scored per clip (keeps runtime bounded "
                           "on long clips even with a loose --percentile)")
@@ -260,25 +304,27 @@ def main():
         for start, end, audio_score in audio_segments:
             sample_ts = np.linspace(start, end, args.frames_per_candidate + 2)[1:-1]
             best_smile = 0.0
-            best_frame = None
-            best_t = (start + end) / 2
             for t in sample_ts:
-                frame = grab_frame(fpath, float(t))
+                frame = grab_frame(fpath, float(t), args.face_sample_size)
                 s = smile_score_for_frame(frame)
-                if s >= best_smile:
+                if s > best_smile:
                     best_smile = s
-                    best_frame = frame
-                    best_t = t
 
             combined = args.audio_weight * audio_score + args.smile_weight * best_smile
+            # A failed face/smile cascade must never demote a strong audio
+            # event. Open-mouth screams and small/profile faces are common
+            # false negatives for Haar cascades.
+            ranking_score = max(float(audio_score), float(combined))
             all_segments.append({
                 "file": fname,
                 "start": round(float(start), 2),
                 "end": round(float(end), 2),
                 "duration": round(float(end - start), 2),
+                "source_duration": round(float(duration), 2),
                 "audio_score": round(float(audio_score), 4),
                 "smile_score": round(float(best_smile), 4),
-                "score": round(float(combined), 4),
+                "combined_score": round(float(combined), 4),
+                "score": round(ranking_score, 4),
             })
 
     # merge this run's results into the persisted state, then rank across
@@ -291,8 +337,10 @@ def main():
     ranked = sorted(state_segments, key=lambda s: s["score"], reverse=True)
     top_segments = ranked[:args.top_n]
 
-    # regrab one frame per finalized top segment (cheap: a handful of
-    # fast-seek grabs, not a full rescan). Note: some sandboxed filesystems
+    # Regrab a strip of frames across every finalized segment. A single
+    # thumbnail can land before/after the actual reaction and caused known
+    # misses even when audio detection found the correct window. Note: some
+    # sandboxed filesystems
     # don't allow deleting/overwriting already-written files, so this
     # never deletes old thumbnails — names are content-deterministic
     # (same file+start -> same name), so an existing file is just reused
@@ -302,16 +350,30 @@ def main():
     for i, seg in enumerate(top_segments):
         # name by content (file+start), not rank — rank shifts across
         # incremental runs, but the same segment reuses the same thumbnail
-        thumb_name = f"seg_{os.path.splitext(seg['file'])[0]}_{seg['start']:.2f}s.jpg"
+        thumb_name = (f"seg_{os.path.splitext(seg['file'])[0]}_"
+                      f"{seg['start']:.2f}s_context_review.jpg")
         thumb_path = os.path.join(thumb_dir, thumb_name)
+        fpath = os.path.join(raw_dir, seg["file"])
+        source_duration = float(seg.get("source_duration") or
+                                (ffprobe_duration(fpath) if os.path.exists(fpath) else
+                                 seg["end"] + args.review_postroll))
+        review_start = max(0.0, seg["start"] - args.review_preroll)
+        review_end = min(source_duration, seg["end"] + args.review_postroll)
+        review_span = max(0.01, review_end - review_start)
+        review_ts = np.linspace(review_start + review_span * 0.05,
+                                review_end - review_span * 0.05,
+                                max(2, args.review_frames))
+        seg["review_start"] = round(float(review_start), 2)
+        seg["review_end"] = round(float(review_end), 2)
+        seg["review_times"] = [round(float(t), 2) for t in review_ts]
         if os.path.exists(thumb_path):
             seg["thumbnail"] = os.path.join("thumbnails", thumb_name)
             continue
-        fpath = os.path.join(raw_dir, seg["file"])
-        mid = (seg["start"] + seg["end"]) / 2
-        frame = grab_frame(fpath, mid) if os.path.exists(fpath) else None
-        if frame is not None:
-            cv2.imwrite(thumb_path, frame)
+        frames = ([grab_frame(fpath, float(t), args.face_sample_size) for t in review_ts]
+                  if os.path.exists(fpath) else [])
+        sheet = make_review_sheet(frames, review_ts)
+        if sheet is not None:
+            cv2.imwrite(thumb_path, sheet)
             seg["thumbnail"] = os.path.join("thumbnails", thumb_name)
         else:
             seg.pop("thumbnail", None)

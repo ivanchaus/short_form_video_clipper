@@ -1,0 +1,14 @@
+# Media and generated data
+raw/
+output/
+reference/
+work/**/
+work/*.log
+*.mp4
+*.mov
+
+# Python / OS
+__pycache__/
+*.pyc
+.DS_Store
+.claude/scheduled_tasks.lock

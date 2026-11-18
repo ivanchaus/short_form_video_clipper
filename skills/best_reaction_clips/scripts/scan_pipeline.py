@@ -4,9 +4,10 @@ scan_pipeline.py — One-command wrapper around the mechanical (non-judgment)
 steps of finding reaction moments in a raw/ folder, so a single CLI
 invocation replaces dozens of individual Claude tool calls:
 
-  1. audio+smile candidate detection (calls analyze_clips.py)
+  1. audio+smile candidate detection (calls analyze_clips.py), with audio
+     and face scores treated as independent evidence rather than gates
   2. a dense, fixed-interval frame sweep across every file (catches quiet
-     gestures like pointing that never trigger an audio spike)
+     faces and gestures that never trigger an audio spike)
   3. a motion-ranked scan: decode each file at a low fixed fps, score
      frame-to-frame pixel motion, and surface only the top spikes as
      individually-legible frames. This exists because the fixed-interval
@@ -34,7 +35,7 @@ Usage:
 
 Output layout under <out_dir>:
     analysis/analysis.json         — ranked audio+smile candidates
-    analysis/thumbnails/*.jpg      — one thumb per candidate
+    analysis/thumbnails/*.jpg      — a multi-frame review sheet per candidate
     dense/manifest.json            — [{idx, file, t}, ...] for every dense frame
     dense/frames/fNNNN.jpg         — raw extracted frames (kept, in case a
                                       grid cell needs a closer look)
@@ -98,6 +99,11 @@ def run_audio_smile_detection(raw_dir, out_dir, args, logf):
         "--max-per-file", str(args.max_per_file),
         "--audio-weight", str(args.audio_weight),
         "--smile-weight", str(args.smile_weight),
+        "--frames-per-candidate", str(args.frames_per_candidate),
+        "--review-frames", str(args.review_frames),
+        "--review-preroll", str(args.review_preroll),
+        "--review-postroll", str(args.review_postroll),
+        "--face-sample-size", str(args.face_sample_size),
     ]
     log(f"Running audio+smile detection: {' '.join(cmd)}", logf)
     proc = subprocess.run(cmd, capture_output=True, text=True)
@@ -164,7 +170,10 @@ def run_dense_sweep(raw_dir, out_dir, args, logf):
         subprocess.run(
             ["ffmpeg", "-y", "-v", "error", "-ss", str(seek_t), "-i",
              os.path.join(raw_dir, m["file"]), "-frames:v", "1",
-             "-vf", f"scale={args.thumb_size}:{args.thumb_size}", out],
+             "-vf", (f"scale={args.thumb_size}:{args.thumb_size}:"
+                     "force_original_aspect_ratio=decrease,"
+                     f"pad={args.thumb_size}:{args.thumb_size}:"
+                     "(ow-iw)/2:(oh-ih)/2:black"), out],
             capture_output=True
         )
         if not os.path.exists(out):
@@ -397,15 +406,20 @@ def main():
     ap.add_argument("--skip-dense-sweep", action="store_true",
                      help="skip the dense frame sweep (audio detection only)")
     # audio+smile detection knobs (passed through to analyze_clips.py)
-    ap.add_argument("--percentile", type=float, default=45)
-    ap.add_argument("--top-n", type=int, default=150)
-    ap.add_argument("--max-per-file", type=int, default=15)
+    ap.add_argument("--percentile", type=float, default=30)
+    ap.add_argument("--top-n", type=int, default=300)
+    ap.add_argument("--max-per-file", type=int, default=30)
     ap.add_argument("--audio-weight", type=float, default=0.6)
     ap.add_argument("--smile-weight", type=float, default=0.4)
+    ap.add_argument("--frames-per-candidate", type=int, default=6)
+    ap.add_argument("--review-frames", type=int, default=9)
+    ap.add_argument("--review-preroll", type=float, default=4.0)
+    ap.add_argument("--review-postroll", type=float, default=4.0)
+    ap.add_argument("--face-sample-size", type=int, default=960)
     # dense sweep knobs
-    ap.add_argument("--dense-interval", type=float, default=3.0,
+    ap.add_argument("--dense-interval", type=float, default=1.0,
                      help="seconds between frames in the dense sweep")
-    ap.add_argument("--thumb-size", type=int, default=280,
+    ap.add_argument("--thumb-size", type=int, default=480,
                      help="square thumbnail size for dense-sweep frames")
     ap.add_argument("--skip-files", default="",
                      help="comma-separated exact filenames to exclude from the "
@@ -414,8 +428,8 @@ def main():
                      help="comma-separated substrings; a file is excluded from the "
                           "dense sweep if any substring matches (default filters out "
                           "'video 2.mp4' duplicate-copy files)")
-    ap.add_argument("--grid-cols", type=int, default=8)
-    ap.add_argument("--grid-rows", type=int, default=6)
+    ap.add_argument("--grid-cols", type=int, default=4)
+    ap.add_argument("--grid-rows", type=int, default=3)
     # motion scan knobs
     ap.add_argument("--skip-motion-scan", action="store_true",
                      help="skip the motion-spike scan (catches brief/quiet "
@@ -441,13 +455,13 @@ def main():
                           "(speed knob, not output quality — finer than the old "
                           "320 default so a small gesture isn't blurred away "
                           "before block-scoring even sees it)")
-    ap.add_argument("--motion-top-n", type=int, default=150,
+    ap.add_argument("--motion-top-n", type=int, default=300,
                      help="max number of motion-spike candidates to keep, "
                           "across the whole raw_dir")
-    ap.add_argument("--motion-min-gap", type=float, default=4.0,
+    ap.add_argument("--motion-min-gap", type=float, default=2.0,
                      help="min seconds between two kept candidates in the same "
                           "file, so one sustained gesture doesn't crowd out others")
-    ap.add_argument("--motion-max-per-file", type=int, default=3,
+    ap.add_argument("--motion-max-per-file", type=int, default=8,
                      help="max candidates kept from any single file, so a long "
                           "or generally busy file can't crowd out the top-n list")
     ap.add_argument("--motion-reuse-scores", action="store_true",
@@ -489,16 +503,22 @@ def main():
 
         log("=== scan_pipeline done ===", logf)
 
-    print(f"\nDone. Review:\n"
-          f"  {out_dir}/motion/grids/*.jpg — start here (small set, ranked) "
-          f"(cols={args.motion_grid_cols}, rows={args.motion_grid_rows} per grid; "
-          f"flat index = grid*{args.motion_grid_cols*args.motion_grid_rows} + "
-          f"row*{args.motion_grid_cols} + col; look up in motion/manifest.json)\n"
-          f"  {out_dir}/analysis/analysis.json + thumbnails/\n"
-          f"  {out_dir}/dense/grids/*.jpg "
-          f"(cols={args.grid_cols}, rows={args.grid_rows} per grid; "
-          f"flat index = grid*{args.grid_cols*args.grid_rows} + row*{args.grid_cols} + col; "
-          f"look up that index in dense/manifest.json for file/timestamp)")
+    review = ["\nDone. Review:"]
+    if not args.skip_motion_scan:
+        review.append(
+            f"  {out_dir}/motion/grids/*.jpg — start here (small set, ranked) "
+            f"(cols={args.motion_grid_cols}, rows={args.motion_grid_rows} per grid; "
+            f"flat index = grid*{args.motion_grid_cols*args.motion_grid_rows} + "
+            f"row*{args.motion_grid_cols} + col; look up in motion/manifest.json)")
+    if not args.skip_audio_detection:
+        review.append(f"  {out_dir}/analysis/analysis.json + thumbnails/")
+    if not args.skip_dense_sweep:
+        review.append(
+            f"  {out_dir}/dense/grids/*.jpg "
+            f"(cols={args.grid_cols}, rows={args.grid_rows} per grid; "
+            f"flat index = grid*{args.grid_cols*args.grid_rows} + row*{args.grid_cols} + col; "
+            f"look up that index in dense/manifest.json for file/timestamp)")
+    print("\n".join(review))
 
 
 if __name__ == "__main__":
